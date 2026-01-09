@@ -16,7 +16,6 @@ class SimulationAgent(Agent):
 
             team = random.choice(list(teams.keys()))
             player = random.choice(teams[team])
-
             r = random.random()
 
             event = {
@@ -30,17 +29,13 @@ class SimulationAgent(Agent):
             if r < 0.04:
                 event["type"] = "goal"
                 event["xg"] = round(random.uniform(0.2, 0.9), 2)
-
             elif r < 0.10:
                 event["type"] = "shot"
                 event["xg"] = round(random.uniform(0.05, 0.4), 2)
-
             elif r < 0.20:
                 event["type"] = "foul"
-
             elif r < 0.55:
                 event["type"] = "pass"
-
             else:
                 self.counter += 1
                 return

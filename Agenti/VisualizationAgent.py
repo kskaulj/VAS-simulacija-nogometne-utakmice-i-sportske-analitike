@@ -5,6 +5,7 @@ import ast
 class VisualizationAgent(Agent):
     async def setup(self):
         self.stats = {}
+        self.players = {}
         self.prediction = "Waiting..."
         self.minute = 0
         self.add_behaviour(self.VizBehaviour())
@@ -15,5 +16,6 @@ class VisualizationAgent(Agent):
             if msg:
                 data = ast.literal_eval(msg.body)
                 self.agent.stats = data["stats"]
+                self.agent.players = data["players"]
                 self.agent.prediction = data["prediction"]
                 self.agent.minute = data["minute"]

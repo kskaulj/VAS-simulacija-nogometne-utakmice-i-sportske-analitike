@@ -10,6 +10,10 @@ class AnalyticsAgent(Agent):
             "Team A": {"goals":0, "shots":0, "fouls":0, "passes":0, "xg":0},
             "Team B": {"goals":0, "shots":0, "fouls":0, "passes":0, "xg":0}
         }
+        self.player_stats = {
+            "Team A": {},
+            "Team B": {}
+}
         self.add_behaviour(self.AnalysisBehaviour())
 
     class AnalysisBehaviour(CyclicBehaviour):
@@ -21,6 +25,17 @@ class AnalyticsAgent(Agent):
             event = ast.literal_eval(msg.body)
             team = event["team"]
             self.agent.minute = event["minute"]
+            player = event["player"]
+            team = event["team"]
+
+            if player not in self.agent.player_stats[team]:
+                self.agent.player_stats[team][player] = {
+                "goals": 0,
+                "shots": 0,
+                "fouls": 0,
+                "passes": 0
+            }
+            
 
             if event["type"] == "goal":
                 self.agent.stats[team]["goals"] += 1

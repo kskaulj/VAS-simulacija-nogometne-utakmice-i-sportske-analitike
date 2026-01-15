@@ -11,6 +11,7 @@ from dashboard import run_dashboard
 
 
 async def main():
+    print("=" * 50)
     print("POČETAK SIMULACIJE")
     print("=" * 50)
 
@@ -59,7 +60,7 @@ async def main():
     dashboard_thread = threading.Thread(target=run_dashboard, args=(viz,), daemon=True)
     dashboard_thread.start()
 
-    print("\nMatch is on!")
+    print("\nThe match has begun.")
     print("=" * 50)
     print()
 
@@ -73,7 +74,7 @@ async def main():
    
     print("\n" + "=" * 50)
     print(
-        f"Finalni rezultat: Team A {analytics.stats['Team A']['goals']} - "
+        f"FINAL RESULT: Team A {analytics.stats['Team A']['goals']} - "
         f"{analytics.stats['Team B']['goals']} Team B"
     )
     print(f"TIM A: {analytics.stats['Team A']}")
@@ -115,7 +116,7 @@ async def main():
     await viz.stop()
 
     print("\nMatch is finished.")
-    print("Press Ctrl+C to exit\n")
+    
 
     
     try:

@@ -31,8 +31,8 @@ class AnalyticsAgent(Agent):
             writer = csv.writer(f)
             writer.writerow(["Minute", "Team", "Player", "Action", "xG"])
 
-        print("Analitički agent je započeo s radom")
-        print(f"Event log se sprema tu: {self.csv_filename}")
+        print("Analytics agent starts.")
+        print(f"Event log is saved in: {self.csv_filename}")
 
         self.add_behaviour(self.AnalysisBehaviour())
 
@@ -61,7 +61,7 @@ class AnalyticsAgent(Agent):
 
                 # ispis samo kad se promijeni
                 if self.agent.last_possession != team_poss:
-                    print(f"[Posjed lopte] Minuta {minute}: {team_poss}")
+                    print(f"[Ball posession] Minute {minute}: {team_poss}")
                     self.agent.last_possession = team_poss
 
                 return  
@@ -122,8 +122,8 @@ class AnalyticsAgent(Agent):
                 score_a = self.agent.stats["Team A"]["goals"]
                 score_b = self.agent.stats["Team B"]["goals"]
                 print(f"\nGOAL: [{team}] {event.get('player')} scores! (xG: {xg_value:.2f})")
-                print(f"Rezultat: Team A {score_a} - {score_b} Team B")
-                print(f"Predviđanje: {prediction}\n")
+                print(f"Result: Team A {score_a} - {score_b} Team B")
+                print(f"Prediction: {prediction}\n")
 
         def predict(self):
             #za predviđanje pobjednika koriste se performanse pomnižene s "weights"
@@ -140,7 +140,7 @@ class AnalyticsAgent(Agent):
             a = score("Team A")
             b = score("Team B")
             if a > b:
-                return "Tim A ima veće šanse za pobjedu"
+                return "Team A is more likely to win."
             elif b > a:
-                return "Tim B ima veće šanse za pobjedu"
-            return "Neriješeno"
+                return "Team B is more likely to win."
+            return "It's a tie."

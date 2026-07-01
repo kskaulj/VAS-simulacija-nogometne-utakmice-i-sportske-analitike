@@ -19,17 +19,37 @@ async def main():
     team_a = TeamAgent("teama@localhost", "password")
     team_a.team_name = "Team A"
     team_a.players = [
-        "Modrić", "Perišić", "Mandžukić", "Rakitić", "Vida",
-        "Vrsaljko", "Rebić", "Brozović", "Kovačić", "Subašić", "Strinić"
+        {"name": "Subašić", "role": "GK", "rating": 82},
+        {"name": "Vrsaljko", "role": "DEF", "rating": 80},
+        {"name": "Vida", "role": "DEF", "rating": 79},
+        {"name": "Strinić", "role": "DEF", "rating": 77},
+        {"name": "Brozović", "role": "MID", "rating": 85},
+        {"name": "Modrić", "role": "MID", "rating": 90},
+        {"name": "Rakitić", "role": "MID", "rating": 87},
+        {"name": "Kovačić", "role": "MID", "rating": 83},
+        {"name": "Perišić", "role": "FWD", "rating": 84},
+        {"name": "Rebić", "role": "FWD", "rating": 81},
+        {"name": "Mandžukić", "role": "FWD", "rating": 85},
     ]
+    team_a.skill = 1.0
 
-    
+
     team_b = TeamAgent("teamb@localhost", "password")
     team_b.team_name = "Team B"
     team_b.players = [
-        "Ronaldo", "Messi", "Neymar", "Mbappé", "Benzema",
-        "De Bruyne", "Salah", "Lewandowski", "Haaland", "Neuer", "Ramos"
+        {"name": "Neuer", "role": "GK", "rating": 90},
+        {"name": "Ramos", "role": "DEF", "rating": 89},
+        {"name": "De Bruyne", "role": "MID", "rating": 91},
+        {"name": "Messi", "role": "FWD", "rating": 94},
+        {"name": "Ronaldo", "role": "FWD", "rating": 93},
+        {"name": "Neymar", "role": "FWD", "rating": 90},
+        {"name": "Mbappé", "role": "FWD", "rating": 92},
+        {"name": "Benzema", "role": "FWD", "rating": 89},
+        {"name": "Salah", "role": "FWD", "rating": 88},
+        {"name": "Lewandowski", "role": "FWD", "rating": 90},
+        {"name": "Haaland", "role": "FWD", "rating": 91},
     ]
+    team_b.skill = 1.08
 
    
     analytics = AnalyticsAgent("analytics@localhost", "password")
@@ -57,7 +77,7 @@ async def main():
 
     
     print("\nDASHBOARD: http://localhost:5000")
-    dashboard_thread = threading.Thread(target=run_dashboard, args=(viz,), daemon=True)
+    dashboard_thread = threading.Thread(target=run_dashboard, args=(viz, team_a, team_b), daemon=True)
     dashboard_thread.start()
 
     print("\nThe match has begun.")

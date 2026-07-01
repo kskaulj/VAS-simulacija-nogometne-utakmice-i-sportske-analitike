@@ -5,12 +5,34 @@ import json
 
 app = Flask(__name__)
 viz_agent = None
+team_a_agent = None
+team_b_agent = None
 
 
-def run_dashboard(agent):
-    global viz_agent
+def run_dashboard(agent, team_a=None, team_b=None):
+    global viz_agent, team_a_agent, team_b_agent
     viz_agent = agent
+    team_a_agent = team_a
+    team_b_agent = team_b
     app.run(debug=False, port=5000, use_reloader=False)
+
+
+def format_commentary(event):
+    minute = event.get("minute")
+    team = event.get("team")
+    player = event.get("player")
+    action = event.get("action")
+    xg = event.get("xG", 0) or 0
+
+    if action == "goal":
+        return f"{minute}' GOAL! {player} ({team}) scores! xG {xg:.2f}"
+    if action == "shot":
+        return f"{minute}' {player} ({team}) shoots — xG {xg:.2f}"
+    if action == "foul":
+        return f"{minute}' Foul committed by {player} ({team})"
+    if action == "pass":
+        return f"{minute}' {player} ({team}) plays a pass"
+    return f"{minute}' {player} ({team}) — {action}"
 
 
 HTML = """
@@ -196,11 +218,100 @@ HTML = """
 
         .full-width { grid-column: 1 / -1; }
 
+        .squad-btn{
+            margin-top: 14px;
+            padding: 10px 18px;
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            background: rgba(30,144,255,0.18);
+            color: white;
+            font-size: 13px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+        .squad-btn:hover{ background: rgba(30,144,255,0.3); }
+
+        .commentary{
+            margin-top: 16px;
+            background: linear-gradient(180deg, var(--panel), var(--panel-2));
+            border: 1px solid var(--stroke);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 14px 16px;
+            max-height: 160px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .commentary-line{
+            font-size: 13px;
+            color: var(--text);
+            padding: 4px 0;
+            border-bottom: 1px dashed var(--stroke);
+        }
+        .commentary-line:last-child{ border-bottom: none; }
+
+        .modal-overlay{
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open{ display: flex; }
+
+        .modal-box{
+            background: linear-gradient(180deg, var(--panel), var(--panel-2));
+            border: 1px solid var(--stroke);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            width: min(900px, 92vw);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-header{
+            display:flex;
+            justify-content: space-between;
+            align-items:center;
+            margin-bottom: 14px;
+        }
+        .modal-header h2{ margin:0; font-size:16px; letter-spacing:.1em; text-transform:uppercase; color:white; }
+        .modal-close{
+            cursor:pointer;
+            border:1px solid var(--stroke);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border-radius: 999px;
+            width: 30px; height:30px;
+            font-size: 14px;
+        }
+        .roster-grid{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+        .roster-table{ width:100%; border-collapse: collapse; font-size: 13px; }
+        .roster-table th{
+            text-align:left; color: var(--muted); font-weight:600; padding: 6px 8px;
+            border-bottom: 1px solid var(--stroke); text-transform:uppercase; font-size:11px; letter-spacing:.06em;
+        }
+        .roster-table td{ padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .fatigue-bar{
+            width:70px; height:8px; border-radius:999px; background: rgba(255,255,255,0.08);
+            overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px;
+        }
+        .fatigue-fill{ height:100%; background: linear-gradient(90deg, var(--accent-green), var(--accent-yellow)); }
+
         /* Mobile */
         @media(max-width: 900px){
             .charts{ grid-template-columns: 1fr; }
             .pill{ min-width: 0; width: 100%; }
             .score{ font-size: 62px; }
+            .roster-grid{ grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -230,6 +341,22 @@ HTML = """
             <div class="pill">
                 <span class="label">xG Team B</span>
                 <span class="value green" id="xg-b">0.00</span>
+            </div>
+        </div>
+
+        <button class="squad-btn" id="squad-btn" onclick="openSquadModal()">Squad Status</button>
+
+        <div class="commentary" id="commentary"></div>
+    </div>
+
+    <div class="modal-overlay" id="squad-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Squad Status — Skill &amp; Fatigue</h2>
+                <button class="modal-close" onclick="closeSquadModal()">&times;</button>
+            </div>
+            <div class="roster-grid" id="roster-grid">
+                <div>Loading...</div>
             </div>
         </div>
     </div>
@@ -309,6 +436,12 @@ HTML = """
                     // xG values
                     document.getElementById('xg-a').textContent = data.xg_a.toFixed(2);
                     document.getElementById('xg-b').textContent = data.xg_b.toFixed(2);
+
+                    // Commentary feed
+                    const commentaryBox = document.getElementById('commentary');
+                    commentaryBox.innerHTML = (data.commentary || [])
+                        .map(line => `<div class="commentary-line">${line}</div>`)
+                        .join('') || '<div class="commentary-line">Waiting for kickoff...</div>';
 
                     // Goals chart
                     Plotly.react('goals-chart', [{
@@ -421,6 +554,50 @@ HTML = """
                 });
         }
 
+        function renderRosterTable(team) {
+            const rows = team.players.map(p => `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.role}</td>
+                    <td>${p.rating}</td>
+                    <td>
+                        <span class="fatigue-bar"><span class="fatigue-fill" style="width:${p.fatigue}%"></span></span>
+                        ${p.fatigue}%
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <div>
+                    <div class="chart-title">${team.team_name} <span class="tag">Skill ${team.skill.toFixed(2)}</span></div>
+                    <table class="roster-table">
+                        <thead>
+                            <tr><th>Player</th><th>Role</th><th>Rating</th><th>Fatigue</th></tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function openSquadModal() {
+            document.getElementById('squad-modal').classList.add('open');
+            fetch('/api/roster')
+                .then(r => r.json())
+                .then(data => {
+                    const grid = document.getElementById('roster-grid');
+                    if (data.error) {
+                        grid.innerHTML = `<div>${data.error}</div>`;
+                        return;
+                    }
+                    grid.innerHTML = renderRosterTable(data['Team A']) + renderRosterTable(data['Team B']);
+                });
+        }
+
+        function closeSquadModal() {
+            document.getElementById('squad-modal').classList.remove('open');
+        }
+
         setInterval(updateDashboard, 1000);
         updateDashboard();
     </script>
@@ -495,6 +672,8 @@ def get_data():
         height=400
     )
 
+    commentary = [format_commentary(e) for e in events[-8:]][::-1]
+
     return jsonify({
         'score_a': stats['Team A']['goals'],
         'score_b': stats['Team B']['goals'],
@@ -507,6 +686,18 @@ def get_data():
         'possession_minutes_a': pos_minutes.get("Team A", 0),
         'possession_minutes_b': pos_minutes.get("Team B", 0),
         'possession_timeline': pos_timeline,
+        'commentary': commentary,
 
         'events_chart': json.loads(plotly.utils.PlotlyJSONEncoder().encode(events_fig))
+    })
+
+
+@app.route('/api/roster')
+def get_roster():
+    if team_a_agent is None or team_b_agent is None:
+        return jsonify({"error": "Not ready"})
+
+    return jsonify({
+        "Team A": team_a_agent.get_roster_status(),
+        "Team B": team_b_agent.get_roster_status(),
     })

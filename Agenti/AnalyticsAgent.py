@@ -29,7 +29,7 @@ class AnalyticsAgent(Agent):
 
         with open(self.csv_filename, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["Minute", "Team", "Player", "Action", "xG"])
+            writer.writerow(["Minute", "Team", "Player", "Role", "Action", "xG"])
 
         print("Analytics agent starts.")
         print(f"Event log is saved in: {self.csv_filename}")
@@ -96,6 +96,7 @@ class AnalyticsAgent(Agent):
                     event.get("minute"),
                     event.get("team"),
                     event.get("player"),
+                    event.get("role"),
                     event.get("action"),
                     xg_value,
                 ])
@@ -124,6 +125,12 @@ class AnalyticsAgent(Agent):
                 print(f"\nGOAL: [{team}] {event.get('player')} scores! (xG: {xg_value:.2f})")
                 print(f"Result: Team A {score_a} - {score_b} Team B")
                 print(f"Prediction: {prediction}\n")
+
+        def avg_xg(self,team: str) -> float:
+            shots = self.agent.stats[team]["shots"]
+            total_xg = self.agent.stats[team]["xG"]
+            return round(total_xg / shots, 3) if shots > 0 else 0.0
+
 
         def predict(self):
             #za predviđanje pobjednika koriste se performanse pomnižene s "weights"

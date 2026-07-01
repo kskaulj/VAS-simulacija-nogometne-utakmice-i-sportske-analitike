@@ -19,7 +19,12 @@ class MatchCoordinatorAgent(Agent):
             "Team B": 0,
         }
 
-        
+        self.score = {
+            "Team A": 0,
+            "Team B": 0,
+        }
+
+
         self.team_jids = {
             "Team A": "teama@localhost",
             "Team B": "teamb@localhost",
@@ -51,9 +56,11 @@ class MatchCoordinatorAgent(Agent):
             #traži se akcija od tima koj ima posjed lopte
             team = self.agent.possession
             team_jid = self.agent.team_jids[team]
+            opponent = "Team B" if team == "Team A" else "Team A"
+            score_diff = self.agent.score[team] - self.agent.score[opponent]
 
             req = Message(to=team_jid)
-            req.body = str({"type": "REQUEST_ACTION", "minute": minute})
+            req.body = str({"type": "REQUEST_ACTION", "minute": minute, "score_diff": score_diff})
             await self.send(req)
 
             
@@ -90,18 +97,24 @@ class MatchCoordinatorAgent(Agent):
 
             other_team = "Team B" if event_team == "Team A" else "Team A"
 
+            if action == "goal":
+                self.agent.score[event_team] += 1
+
+            # umor kroz utakmicu blago povecava sansu za gubitak lopte
+            fatigue_bonus = 0.1 * (minute / 90.0)
+
             #pass povećava streak i s time šansu da se izgubi posjed lopte
             if action == "pass":
                 self.agent.pass_streak[event_team] += 1
                 streak = self.agent.pass_streak[event_team]
 
-                turnover_prob = 0.05
+                turnover_prob = 0.05 + fatigue_bonus
                 if streak >= 4:
-                    turnover_prob = 0.15
+                    turnover_prob = 0.15 + fatigue_bonus
                 if streak >= 7:
-                    turnover_prob = 0.35
+                    turnover_prob = 0.35 + fatigue_bonus
                 if streak >= 10:
-                    turnover_prob = 0.65
+                    turnover_prob = 0.65 + fatigue_bonus
 
                 if random.random() < turnover_prob:
                     #izgubljena lopta / presječena lopta
